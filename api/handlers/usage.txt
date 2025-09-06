@@ -1,0 +1,86 @@
+🚀 Usage Examples:
+
+Create a new operation:
+
+```bash
+curl -X POST http://localhost:8080/api/v1/operations \
+  -H "Content-Type: application/json" \
+  -d '{"target": "example_user", "priority": "high"}'
+```
+
+Check operation status:
+
+```bash
+curl "http://localhost:8080/api/v1/operations/status?id=op_1700000000_abc123"
+```
+
+List all operations:
+
+```bash
+curl "http://localhost:8080/api/v1/operations?status=completed&limit=10"
+```
+
+Get operations statistics:
+
+```bash
+curl "http://localhost:8080/api/v1/operations/stats"
+```
+
+Cancel an operation:
+
+```bash
+curl -X DELETE "http://localhost:8080/api/v1/operations/cancel?id=op_1700000000_abc123"
+```
+
+Cleanup old operations:
+
+```bash
+curl -X POST "http://localhost:8080/api/v1/operations/cleanup?max_age=168h"  # 7 days
+```
+
+📊 Response Examples:
+
+Create Operation Response:
+
+```json
+{
+  "operation_id": "op_1700000000_abc123",
+  "status": "created",
+  "message": "Operation queued for processing",
+  "created_at": "2023-11-15T10:30:00Z"
+}
+```
+
+Operation Status Response:
+
+```json
+{
+  "id": "op_1700000000_abc123",
+  "target": "example_user",
+  "status": "processing",
+  "progress": 60,
+  "created_at": "2023-11-15T10:30:00Z",
+  "started_at": "2023-11-15T10:30:02Z",
+  "resources": ["Scrapy", "SpiderFoot", "AI Analysis"]
+}
+```
+
+Operations Stats Response:
+
+```json
+{
+  "total_operations": 45,
+  "pending_operations": 2,
+  "processing_operations": 3,
+  "completed_operations": 35,
+  "failed_operations": 2,
+  "cancelled_operations": 3,
+  "average_duration": "22.5s",
+  "success_rate": 87.5,
+  "timestamp": "2023-11-15T10:30:00Z"
+}
+```
+
+This ops_handler.go provides complete operational management 
+for your OSINT system with status tracking, statistics, filtering, 
+and cleanup capabilities! 🎯
