@@ -4,10 +4,12 @@ services:
   brain:
     build: ./brain
     ports:
-      - "5555:5555"
+      - "${BRAIN_PORT}:5555"
     environment:
-      - ENVIRONMENT=production
-      - LOG_LEVEL=INFO
+      - ENVIRONMENT=${ENVIRONMENT}
+      - LOG_LEVEL=${LOG_LEVEL}
+      - PORT=5555
+      - HOST=0.0.0.0
     networks:
       - osint-network
     restart: unless-stopped
@@ -15,14 +17,15 @@ services:
   orchestra:
     build: ./orchestra
     ports:
-      - "5558:5558"
+      - "${ORCHESTRA_PORT}:5558"
     environment:
-      - ENVIRONMENT=production
+      - ENVIRONMENT=${ENVIRONMENT}
+      - LOG_LEVEL=${LOG_LEVEL}
       - BRAIN_URL=brain:5555
-      - LOG_LEVEL=INFO
+      - PORT=5558
+      - HOST=0.0.0.0
     depends_on:
       - brain
-      - muscle 
     networks:
       - osint-network
     restart: unless-stopped
@@ -30,14 +33,15 @@ services:
   api:
     build: ./api
     ports:
-      - "8080:8080"
+      - "${API_PORT}:8080"
     environment:
-      - ENVIRONMENT=production
+      - ENVIRONMENT=${ENVIRONMENT}
+      - LOG_LEVEL=${LOG_LEVEL}
       - ORCHESTRATOR_URL=orchestra:5558
-      - LOG_LEVEL=INFO
+      - PORT=8080
+      - HOST=0.0.0.0
     depends_on:
       - orchestra
-      - brain
     networks:
       - osint-network
     restart: unless-stopped
@@ -45,11 +49,12 @@ services:
   web:
     build: ./web
     ports:
-      - "8081:8080"
+      - "${WEB_PORT}:8080"
     environment:
-      - ENVIRONMENT=production
+      - ENVIRONMENT=${ENVIRONMENT}
+      - LOG_LEVEL=${LOG_LEVEL}
       - API_URL=http://api:8080
-      - LOG_LEVEL=INFO
+      - SERVER_PORT=8080
     depends_on:
       - api
     networks:
