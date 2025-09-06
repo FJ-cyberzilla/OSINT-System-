@@ -6,10 +6,14 @@ The following versions of OSINT System
 are currently supported with security updates:
 
 Version Supported Status
+
 2.0.x ✅ Yes Active Support
+
 1.5.x ✅ Yes Security Fixes Only
+
 1.0.x ❌ No End of Life
-< 1.0 ❌ No Not Supported
+
+ 1.0 ❌ No Not Supported
 
 🚨 Reporting a Vulnerability
 
@@ -178,5 +182,5 @@ Remember: This software is for educational purposes only. Users are responsible 
 
 ---
 
-Last Updated: $(date +%06-%6-%26)
+Last Updated: 06-06-26
 Security Policy Version: 2.1
