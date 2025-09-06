@@ -6,163 +6,243 @@ on:
     tags: ['v*.*.*']
   pull_request:
     branches: [main]
+  workflow_dispatch:  # Allow manual triggering
 
 env:
   PROJECT_NAME: osint-system
   VERSION: 1.0.0
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ${{ github.repository_owner }}
 
 jobs:
   # Test all components
   test:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        component: [brain, orchestra, api, web, muscle]
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Setup Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.10'
-
-    - name: Setup Java
-      uses: actions/setup-java@v3
-      with:
-        distribution: 'temurin'
-        java-version: '17'
-
-    - name: Setup Go
-      uses: actions/setup-go@v4
-      with:
-        go-version: '1.21'
-
-    - name: Install system tools
+    - name: Setup component environment
       run: |
-        sudo apt-get update
-        sudo apt-get install -y build-essential clang make
-
-    - name: Test Python Brain
+        echo "Testing ${{ matrix.component }} component"
+        
+    - name: Test Brain (Python)
+      if: matrix.component == 'brain'
       run: |
         cd brain
+        python -m pip install --upgrade pip
         pip install -r requirements.txt
-        python -m pytest tests/ -v || echo "Brain tests completed"
+        if [ -f "tests/__init__.py" ]; then
+          python -m pytest tests/ -v --cov=src --cov-report=xml
+        else
+          echo "No tests found for Brain, skipping"
+        fi
 
-    - name: Test Python Orchestra
+    - name: Test Orchestra (Python)
+      if: matrix.component == 'orchestra'
       run: |
         cd orchestra
+        python -m pip install --upgrade pip
         pip install -r requirements.txt
-        python -m pytest tests/ -v || echo "Orchestra tests completed"
+        if [ -f "tests/__init__.py" ]; then
+          python -m pytest tests/ -v --cov=src --cov-report=xml
+        else
+          echo "No tests found for Orchestra, skipping"
+        fi
 
-    - name: Test Go API
+    - name: Test API (Go)
+      if: matrix.component == 'api'
       run: |
         cd api
-        go test ./... -v || echo "API tests completed"
+        go mod download
+        go test ./... -v -coverprofile=coverage.out
+        go tool cover -func=coverage.out
 
-    - name: Test Java Web
+    - name: Test Web (Java)
+      if: matrix.component == 'web'
       run: |
         cd web
-        mvn test -B || echo "Web tests completed"
+        mvn test -B --no-transfer-progress
+        mvn jacoco:report
 
-    - name: Test C++ Muscle
+    - name: Test Muscle (C++)
+      if: matrix.component == 'muscle'
       run: |
         cd muscle
-        make test || echo "Muscle tests completed"
+        sudo apt-get update
+        sudo apt-get install -y libcurl4-openssl-dev build-essential
+        make test || echo "Muscle tests completed with exit code $?"
+
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results-${{ matrix.component }}
+        path: |
+          ${{ matrix.component }}/**/test-results.xml
+          ${{ matrix.component }}/**/coverage.xml
+          ${{ matrix.component }}/**/coverage.out
+          ${{ matrix.component }}/**/target/site/jacoco/
 
   # Build all components
   build:
     runs-on: ubuntu-latest
     needs: test
+    strategy:
+      matrix:
+        component: [brain, orchestra, api, web, muscle]
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Build Python components
+    - name: Build ${{ matrix.component }}
       run: |
-        cd brain && pip install -r requirements.txt
-        cd ../orchestra && pip install -r requirements.txt
+        cd ${{ matrix.component }}
+        
+        case ${{ matrix.component }} in
+          brain|orchestra)
+            echo "Building Python component: ${{ matrix.component }}"
+            pip install -r requirements.txt
+            ;;
+          api)
+            echo "Building Go API"
+            go mod download
+            go build -v -o bin/api
+            ;;
+          web)
+            echo "Building Java Web"
+            mvn clean package -DskipTests -B --no-transfer-progress
+            ;;
+          muscle)
+            echo "Building C++ Muscle"
+            sudo apt-get install -y libcurl4-openssl-dev
+            make
+            ;;
+        esac
 
-    - name: Build Go API
-      run: |
-        cd api
-        go mod download
-        go build -v
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-${{ matrix.component }}
+        path: |
+          ${{ matrix.component }}/bin/
+          ${{ matrix.component }}/target/
+          ${{ matrix.component }}/muscle
 
-    - name: Build Java Web
-      run: |
-        cd web
-        mvn clean package -DskipTests
-
-    - name: Build C++ Muscle
-      run: |
-        cd muscle
-        make
-
-  # Build Docker images
+  # Build and push Docker images
   docker-build:
     runs-on: ubuntu-latest
     needs: build
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        component: [brain, orchestra, api, web]
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Build Brain Docker image
-      run: |
-        cd brain
-        docker build -t ${{ env.PROJECT_NAME }}-brain:${{ env.VERSION }} .
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
 
-    - name: Build Orchestra Docker image
-      run: |
-        cd orchestra
-        docker build -t ${{ env.PROJECT_NAME }}-orchestra:${{ env.VERSION }} .
+    - name: Log in to GitHub Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Build API Docker image
-      run: |
-        cd api
-        docker build -t ${{ env.PROJECT_NAME }}-api:${{ env.VERSION }} .
+    - name: Extract metadata for Docker
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: |
+          ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/${{ env.PROJECT_NAME }}-${{ matrix.component }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=semver,pattern={{version}}
+          type=semver,pattern={{major}}.{{minor}}
+          type=sha
 
-    - name: Build Web Docker image
-      run: |
-        cd web
-        docker build -t ${{ env.PROJECT_NAME }}-web:${{ env.VERSION }} .
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: ./${{ matrix.component }}
+        push: ${{ github.event_name != 'pull_request' }}
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
 
-  # Deploy manually (triggered via workflow_dispatch)
-  deploy:
+  # Security scanning
+  security-scan:
     runs-on: ubuntu-latest
-    needs: docker-build
-    # This allows manual triggering from GitHub UI
-    if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main'
+    needs: [test, build]
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@0.19.0
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+
+    - name: Upload Trivy scan results
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: 'trivy-results.sarif'
+
+    - name: Run Semgrep SAST
+      uses: returntocorp/semgrep-action@v1
+      with:
+        config: p/security-audit
+
+  # Deploy to staging environment
+  deploy-staging:
+    runs-on: ubuntu-latest
+    needs: [docker-build, security-scan]
+    environment: staging
+    if: github.ref == 'refs/heads/develop' || github.event_name == 'workflow_dispatch'
     
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Deploy to server via SSH
+    - name: Deploy to staging via SSH
       uses: appleboy/ssh-action@v1.0.0
       with:
-        host: ${{ secrets.SSH_HOST }}
-        username: ${{ secrets.SSH_USERNAME }}
-        key: ${{ secrets.SSH_KEY }}
+        host: ${{ secrets.STAGING_SSH_HOST }}
+        username: ${{ secrets.STAGING_SSH_USER }}
+        key: ${{ secrets.STAGING_SSH_KEY }}
         script: |
-          echo "🚀 Deploying OSINT System..."
-          cd /opt/osint-system
+          echo "🚀 Deploying to staging environment..."
+          cd /opt/osint-system-staging
           
-          # Pull latest code
-          git pull origin main
+          # Pull latest images
+          docker-compose pull
           
-          # Stop existing containers
-          docker-compose down || true
-          
-          # Build and start new containers
-          docker-compose build
+          # Stop and restart containers
+          docker-compose down
           docker-compose up -d
           
-          echo "✅ Deployment completed successfully!"
+          echo "✅ Staging deployment completed!"
           docker ps
+          echo "Health check:"
+          curl -f http://localhost:8080/api/v1/health || echo "Health check failed"
 
-  # Manual deployment trigger
-  manual-deploy:
+  # Deploy to production
+  deploy-production:
     runs-on: ubuntu-latest
-    # This workflow can be manually triggered from GitHub UI
-    if: github.event_name == 'workflow_dispatch'
+    needs: [deploy-staging]
+    environment: production
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     
     steps:
     - name: Checkout code
@@ -171,29 +251,75 @@ jobs:
     - name: Deploy to production
       uses: appleboy/ssh-action@v1.0.0
       with:
-        host: ${{ secrets.PRODUCTION_HOST }}
-        username: ${{ secrets.PRODUCTION_USER }}
+        host: ${{ secrets.PRODUCTION_SSH_HOST }}
+        username: ${{ secrets.PRODUCTION_SSH_USER }}
         key: ${{ secrets.PRODUCTION_SSH_KEY }}
         script: |
-          echo "🎯 Manual deployment to production..."
+          echo "🎯 Deploying to production..."
           cd /opt/osint-system
-          git pull origin main
-          docker-compose -f docker-compose.prod.yml down
+          
+          # Maintenance mode on
+          curl -X POST http://localhost:8080/api/v1/maintenance?enabled=true || true
+          
+          # Pull latest images
+          docker-compose -f docker-compose.prod.yml pull
+          
+          # Deploy with zero downtime
           docker-compose -f docker-compose.prod.yml up -d --build
+          
+          # Wait for services to be healthy
+          sleep 30
+          
+          # Maintenance mode off
+          curl -X POST http://localhost:8080/api/v1/maintenance?enabled=false || true
+          
           echo "✅ Production deployment complete!"
+          docker ps
+          echo "Final health check:"
+          curl -f http://localhost:8080/api/v1/health
 
-  # Simple health check
+  # Health check and monitoring
   health-check:
     runs-on: ubuntu-latest
-    needs: deploy
+    needs: deploy-production
+    if: always() && github.ref == 'refs/heads/main'
+    
     steps:
-    - name: Check service health
+    - name: Check production health
       uses: appleboy/ssh-action@v1.0.0
       with:
-        host: ${{ secrets.SSH_HOST }}
-        username: ${{ secrets.SSH_USERNAME }}
-        key: ${{ secrets.SSH_KEY }}
+        host: ${{ secrets.PRODUCTION_SSH_HOST }}
+        username: ${{ secrets.PRODUCTION_SSH_USER }}
+        key: ${{ secrets.PRODUCTION_SSH_KEY }}
         script: |
-          echo "🏥 Health check..."
-          curl -f http://localhost:8080/api/v1/health || exit 1
+          echo "🏥 Production health check..."
+          # Check all critical services
+          services=("api:8080" "web:3000" "brain:5000" "orchestra:5001")
+          
+          for service in "${services[@]}"; do
+            IFS=':' read -r name port <<< "$service"
+            if curl -f "http://localhost:$port/health" > /dev/null 2>&1; then
+              echo "✅ $name is healthy"
+            else
+              echo "❌ $name is down!"
+              exit 1
+            fi
+          done
+          
           echo "✅ All services healthy!"
+
+  # Notify on success/failure
+  notify:
+    runs-on: ubuntu-latest
+    needs: [health-check, deploy-production, deploy-staging]
+    if: always()
+    
+    steps:
+    - name: Send Slack notification
+      uses: 8398a7/action-slack@v3
+      with:
+        status: ${{ job.status }}
+        channel: '#deployments'
+        webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
