@@ -17,8 +17,8 @@ SRCS = $(SRC_DIR)/scanner_engine.cpp
 TEST_SRCS = $(SRC_DIR)/scanner_engine.test.cpp
 
 # Object files
-OBJS = $(BUILD_DIR)/scanner_engine.o
-TEST_OBJS = $(BUILD_DIR)/scanner_engine.test.o
+OBJS = $(BUILD_DIR)/scanner_engine.cpp
+TEST_OBJS = $(BUILD_DIR)/scanner_engine.test.cpp
 
 # Default target
 all: $(TARGET) $(TEST_TARGET)
