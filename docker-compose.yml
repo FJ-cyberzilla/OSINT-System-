@@ -1,0 +1,34 @@
+version: '3.8'
+services:
+  brain:
+    build: ./brain
+    ports: ["5555:5555"]
+    networks: ["osint-net"]
+    volumes:
+      - ./brain/ai_models:/app/ai_models
+    
+  muscle:
+    build: ./muscle
+    ports: ["5556:5556"]
+    networks: ["osint-net"]
+    volumes:
+      - ./muscle/websites.json:/app/websites.json
+    
+  orchestra:
+    build: ./orchestra
+    ports: ["5558:5558"]
+    networks: ["osint-net"]
+    depends_on:
+      - brain
+      - muscle
+    
+  api:
+    build: ./api
+    ports: ["8080:8080"]
+    networks: ["osint-net"]
+    depends_on:
+      - orchestra
+    
+networks:
+  osint-net:
+    driver: bridge
