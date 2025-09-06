@@ -7,7 +7,9 @@
 has been provided for educational purposes only.Use on systems you
 own or have explicit permission to test.
 
-🎲 A multi-language OSINT (Open-Source Intelligence) system designed for **educational use** in security research and ethical hacking studies.
+🎲 A multi-language OSINT
+(Open-Source Intelligence) system designed for **educational use** in security
+research and ethical hacking studies.
 
 ## ⚠️ LEGAL DISCLAIMER
 
@@ -28,11 +30,10 @@ Use at your own risk and responsibility.
 
 
 
-A world-class, multi-language OSINT (Open-Source Intelligence) system designed for professional reconnaissance operations. This platform combines AI-powered analysis with military-grade operational security.
+A world-class, multi-language OSINT 
+(Open-Source Intelligence) system designed for professional reconnaissance operations. This platform combines AI-powered analysis with military-grade operational security.
 
-![GitHub Actions](https://img.shields.io/github/actions/workflow/status/FJ-cyberzilla/Osint-System/main.yaml?style=for-the-badge)
-![Docker](https://img.shields.io/badge/Docker-Ready-blue?style=for-the-badge&logo=docker)
-![Multi-Language](https://img.shields.io/badge/Multi--Language-Python%20%7C%20Go%20%7C%20Java%20%7C%20C++-brightgreen?style=for-the-badge)
+
 
 ## 🚀 Features
 
