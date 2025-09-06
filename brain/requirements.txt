@@ -1,0 +1,15 @@
+# AI/ML dependencies
+numpy==1.24.3
+scikit-learn==1.3.0
+joblib==1.3.2
+pandas==2.0.3
+scipy==1.11.3
+
+# Networking
+zeromq==0.0.0
+pyzmq==25.1.1
+requests==2.31.0
+
+# Utilities
+python-dotenv==1.0.0
+cryptography==41.0.7
