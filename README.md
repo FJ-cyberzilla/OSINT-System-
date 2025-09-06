@@ -9,10 +9,6 @@ own or have explicit permission to test.
 
 🎲 A multi-language OSINT (Open-Source Intelligence) system designed for **educational use** in security research and ethical hacking studies.
 
-![GitHub](https://img.shields.io/badge/Educational-Use Only-red?style=for-the-badge)
-![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
-![Python](https://img.shields.io/badge/Python-3.10+-blue?style=for-the-badge&logo=python)
-
 ## ⚠️ LEGAL DISCLAIMER
 
 **USING THIS SOFTWARE FOR EDUCATIONAL PURPOSES ONLY IS MANDATORY USE RESPONSIBLY.**
@@ -226,10 +222,6 @@ OPSEC Compliance
 · GitHub Actions - CI/CD automation
 
 ---
-
-https://img.shields.io/badge/OSINT-Professional-blue?style=for-the-badge
-https://img.shields.io/badge/Privacy-First-red?style=for-the-badge
-https://img.shields.io/badge/Open%20Source-Yes-brightgreen?style=for-the-badge
 
 Thanks for your consideration.
 FJ™ Cybertronic Systems® - MMXXVI
