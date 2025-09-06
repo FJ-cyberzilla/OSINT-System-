@@ -1,34 +1,61 @@
 version: '3.8'
+
 services:
   brain:
     build: ./brain
-    ports: ["5555:5555"]
-    networks: ["osint-net"]
-    volumes:
-      - ./brain/ai_models:/app/ai_models
-    
-  muscle:
-    build: ./muscle
-    ports: ["5556:5556"]
-    networks: ["osint-net"]
-    volumes:
-      - ./muscle/websites.json:/app/websites.json
-    
+    ports:
+      - "5555:5555"
+    environment:
+      - ENVIRONMENT=production
+      - LOG_LEVEL=INFO
+    networks:
+      - osint-network
+    restart: unless-stopped
+
   orchestra:
     build: ./orchestra
-    ports: ["5558:5558"]
-    networks: ["osint-net"]
+    ports:
+      - "5558:5558"
+    environment:
+      - ENVIRONMENT=production
+      - BRAIN_URL=brain:5555
+      - LOG_LEVEL=INFO
     depends_on:
       - brain
-      - muscle
-    
+      - muscle 
+    networks:
+      - osint-network
+    restart: unless-stopped
+
   api:
     build: ./api
-    ports: ["8080:8080"]
-    networks: ["osint-net"]
+    ports:
+      - "8080:8080"
+    environment:
+      - ENVIRONMENT=production
+      - ORCHESTRATOR_URL=orchestra:5558
+      - LOG_LEVEL=INFO
     depends_on:
       - orchestra
-    
+      - brain
+    networks:
+      - osint-network
+    restart: unless-stopped
+
+  web:
+    build: ./web
+    ports:
+      - "8081:8080"
+    environment:
+      - ENVIRONMENT=production
+      - API_URL=http://api:8080
+      - LOG_LEVEL=INFO
+    depends_on:
+      - api
+    networks:
+      - osint-network
+    restart: unless-stopped
+
 networks:
-  osint-net:
+  osint-network:
     driver: bridge
