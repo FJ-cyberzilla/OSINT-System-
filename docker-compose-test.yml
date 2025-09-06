@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  brain:
+    build: ./brain
+    ports:
+      - "5555:5555"
+
+  orchestra:
+    build: ./orchestra
+    ports:
+      - "5558:5558"
+    depends_on:
+      - brain
+
+  api:
+    build: ./api
+    ports:
+      - "8080:8080"
+    depends_on:
+      - orchestra
+
+  web:
+    build: ./web
+    ports:
+      - "8081:8080"
+    depends_on:
+      - api
