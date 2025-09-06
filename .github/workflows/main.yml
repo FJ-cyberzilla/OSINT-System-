@@ -1,0 +1,11 @@
+deploy-simple:
+  needs: test-all
+  runs-on: ubuntu-latest
+  steps:
+    - name: Deploy to server
+      run: |
+        ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "
+          cd /opt/osint-system &&
+          git pull &&
+          make deploy
+        "
