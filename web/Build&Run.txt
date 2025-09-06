@@ -1,0 +1,28 @@
+# Build the project
+mvn clean package
+
+# Run locally
+java -jar target/osint-gateway-1.0.0.jar
+
+# Or with Docker
+docker build -t osint-gateway .
+docker run -p 8080:8080 -e ORCHESTRATOR_URL=http://host.docker.internal:5558 
+osint-gateway
+
+📡 API Endpoints:
+
+· POST /api/v1/investigate - Start new investigation
+· GET /api/v1/operations/{id} - Get operation status
+· GET /api/v1/health - Health check
+· DELETE /api/v1/cache - Clear operation cache
+
+This completes the professional Java Spring API Gateway that connects to our Python Orchestra layer! The gateway provides:
+
+✅ Async processing with DeferredResult
+✅ Retry mechanisms for resilience
+✅ Caching for performance
+✅ Input validation
+✅ Comprehensive error handling
+✅ CORS support
+✅ Health checks
+✅ Docker ready
