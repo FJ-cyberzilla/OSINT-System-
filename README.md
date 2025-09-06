@@ -1,6 +1,8 @@
 
 ```markdown
-# 🔎 OSINT System - Professional Intelligence Gathering Platform
+# 🔎 OSINT System -
+Professional Intelligence
+Gathering Platform
 
 
 ⚡ Warning ⚡ This tool/app/code
