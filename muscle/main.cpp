@@ -6,6 +6,7 @@
 #include <chrono>
 #include <iomanip>
 #include <csignal>
+#include <vector>
 #include <nlohmann/json.hpp>
 #include "scanner_engine.hpp"
 #include "websites_manager.hpp"
@@ -19,8 +20,9 @@ private:
     zmq::socket_t socket;
     ScannerEngine scanner;
     WebsitesManager websites_manager;
-    RateLimiter rate_limiter;
+    AdaptiveRateLimiter rate_limiter;
     std::atomic<bool> running{false};
+    std::atomic<int> consecutive_errors{0};
     
     std::string get_current_timestamp() {
         auto now = std::chrono::system_clock::now();
@@ -30,12 +32,44 @@ private:
         return ss.str();
     }
     
+    // OPSEC: Check for suspicious patterns
+    bool is_suspicious_request(const json& message) {
+        try {
+            std::string target = message["target"].get<std::string>();
+            
+            // Check for obviously fake or test patterns
+            if (target == "test" || target == "admin" || target == "root") {
+                return true;
+            }
+            
+            // Check for rapid repeated requests
+            static std::string last_target;
+            static auto last_time = std::chrono::steady_clock::now();
+            auto now = std::chrono::steady_clock::now();
+            auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - last_time).count();
+            
+            if (target == last_target && elapsed < 500) { // Same target in <500ms
+                return true;
+            }
+            
+            last_target = target;
+            last_time = now;
+            
+        } catch (...) {
+            // If we can't parse, be cautious
+            return true;
+        }
+        
+        return false;
+    }
+    
 public:
-    MuscleEngine() : context(1), socket(context, ZMQ_REP), rate_limiter(10, 1000) {
+    MuscleEngine() : context(1), socket(context, ZMQ_REP), rate_limiter(1500) {
         socket.bind("tcp://*:5556");
         socket.setsockopt(ZMQ_RCVTIMEO, 1000);
         websites_manager.load_websites("websites.json");
-        std::cout << "💪 MUSCLE layer initialized and listening on port 5556" << std::endl;
+        std::cout << "💪 MUSCLE layer initialized with OPSEC features" << std::endl;
+        std::cout << "📡 Listening on port 5556" << std::endl;
     }
     
     ~MuscleEngine() {
@@ -43,9 +77,8 @@ public:
     }
     
     json perform_scan(const std::string& target, const json& pattern_data) {
-        if (!rate_limiter.allow_request()) {
-            throw std::runtime_error("Rate limit exceeded. Please try again later.");
-        }
+        // Apply rate limiting with OPSEC
+        rate_limiter.wait();
         
         auto websites = websites_manager.get_websites();
         auto results = scanner.scan_target(target, websites);
@@ -57,14 +90,14 @@ public:
             {"websites_found", results.found_count},
             {"results", results.details},
             {"performance_metrics", scanner.get_performance_metrics()},
-            {"timestamp", get_current_timestamp()}
+            {"timestamp", get_current_timestamp()},
+            {"opsec_note", "Rate limited and randomized for operational security"}
         };
     }
     
     json gather_intelligence(const std::string& target, const json& scan_data) {
-        if (!rate_limiter.allow_request()) {
-            throw std::runtime_error("Rate limit exceeded. Please try again later.");
-        }
+        // Apply rate limiting with OPSEC
+        rate_limiter.wait();
         
         auto intel = scanner.gather_additional_intel(target, scan_data);
         
@@ -74,7 +107,8 @@ public:
             {"whois_data", intel.whois_info},
             {"social_analysis", intel.social_analysis},
             {"threat_intel", intel.threat_data},
-            {"timestamp", get_current_timestamp()}
+            {"timestamp", get_current_timestamp()},
+            {"opsec_note", "Rate limited and randomized for operational security"}
         };
     }
     
@@ -84,26 +118,47 @@ public:
         json response;
         
         try {
-            if (action == "perform_scan") {
+            // OPSEC: Check for suspicious requests
+            if (is_suspicious_request(message)) {
+                std::cout << "🚨 Suspicious request detected: " << target << std::endl;
+                rate_limiter.emergency_slowdown();
+                response = {{"error", "Request throttled for security reasons"}};
+                consecutive_errors++;
+            }
+            else if (action == "perform_scan") {
                 auto pattern_data = message.value("pattern_data", json::object());
                 response = perform_scan(target, pattern_data);
+                consecutive_errors = 0;
             }
             else if (action == "gather_intelligence") {
                 auto scan_data = message.value("scan_data", json::object());
                 response = gather_intelligence(target, scan_data);
+                consecutive_errors = 0;
             }
             else if (action == "status") {
                 response = {
                     {"status", "running"},
                     {"requests_processed", rate_limiter.get_request_count()},
+                    {"current_delay_ms", rate_limiter.get_current_delay().count()},
                     {"timestamp", get_current_timestamp()}
                 };
             }
+            else if (action == "reset_limiter") {
+                rate_limiter.reset();
+                response = {{"status", "rate_limiter_reset"}};
+            }
             else {
                 response = {{"error", "Unknown action: " + action}};
+                consecutive_errors++;
             }
         } catch (const std::exception& e) {
             response = {{"error", std::string("Processing failed: ") + e.what()}};
+            consecutive_errors++;
+            
+            // Emergency slowdown if too many errors
+            if (consecutive_errors > 3) {
+                rate_limiter.emergency_slowdown();
+            }
         }
         
         zmq::message_t reply(response.dump());
@@ -112,7 +167,8 @@ public:
     
     void run() {
         running = true;
-        std::cout << "🚀 Muscle engine started. Waiting for requests..." << std::endl;
+        std::cout << "🚀 Muscle engine started with adaptive rate limiting" << std::endl;
+        std::cout << "🛡️  OPSEC features enabled: jitter, randomization, pattern detection" << std::endl;
         
         while (running) {
             zmq::message_t request;
@@ -149,7 +205,7 @@ int main() {
         
         // Handle graceful shutdown
         std::signal(SIGINT, [](int) {
-            std::cout << "\n🛑 Shutting down Muscle engine..." << std::endl;
+            std::cout << "\n🛑 Shutting down Muscle engine gracefully..." << std::endl;
             exit(0);
         });
         
