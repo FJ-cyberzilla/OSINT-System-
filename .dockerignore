@@ -1,11 +1,76 @@
-**/__pycache__
-**/.pytest_cache
-**/.venv
-**/node_modules
-**/.git
-**/.DS_Store
-**/*.log
-**/tmp
-**/.env
-**/.vscode
-**/coverage
+# Global ignore patterns for all Docker builds
+
+# Version control
+.git/
+.gitignore
+.github/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.venv/
+venv/
+env/
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Java
+target/
+*.jar
+*.war
+*.ear
+*.zip
+*.tar.gz
+
+# Go
+bin/
+pkg/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Environment files (except example)
+.env
+*.env.local
+*.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Temporary files
+tmp/
+temp/
+
+# Build artifacts
+dist/
+build/
+.coverage
+htmlcov/
+
+# Docker itself
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Documentation
+docs/_build/
+
+# Specific to our project
+ops/logs/
+ops/results/
+ops/temp/
