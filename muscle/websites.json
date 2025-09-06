@@ -1,0 +1,39 @@
+{
+  "websites": [
+    {
+      "name": "GitHub",
+      "url": "https://github.com/{}",
+      "check_type": "status_code",
+      "priority": 1,
+      "timeout_ms": 5000
+    },
+    {
+      "name": "Twitter", 
+      "url": "https://twitter.com/{}",
+      "check_type": "status_code",
+      "priority": 1,
+      "timeout_ms": 5000
+    },
+    {
+      "name": "Instagram",
+      "url": "https://instagram.com/{}",
+      "check_type": "status_code", 
+      "priority": 1,
+      "timeout_ms": 7000
+    },
+    {
+      "name": "Reddit",
+      "url": "https://reddit.com/user/{}",
+      "check_type": "status_code",
+      "priority": 2,
+      "timeout_ms": 6000
+    },
+    {
+      "name": "LinkedIn",
+      "url": "https://linkedin.com/in/{}",
+      "check_type": "status_code",
+      "priority": 1,
+      "timeout_ms": 8000
+    }
+  ]
+}
