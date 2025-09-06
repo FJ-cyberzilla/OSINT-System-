@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  brain:
+    image: osint-system-brain:${VERSION}
+    environment:
+      - ENVIRONMENT=staging
+
+  orchestra:
+    image: osint-system-orchestra:${VERSION}
+    environment:
+      - ENVIRONMENT=staging
+    depends_on:
+      - brain
+
+  api:
+    image: osint-system-api:${VERSION}
+    environment:
+      - ENVIRONMENT=staging
+    depends_on:
+      - orchestra
+
+  web:
+    image: osint-system-web:${VERSION}
+    environment:
+      - ENVIRONMENT=staging
+    depends_on:
+      - api
