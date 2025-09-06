@@ -225,6 +225,7 @@ OPSEC Compliance
 · GitHub Actions - CI/CD automation
 
 ---
+[![Security Policy](https://img.shields.io/badge/Security-Policy-blue.svg)](SECURITY.md)
 
 Thanks for your consideration.
 FJ™ Cybertronic Systems® - MMXXVI
