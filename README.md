@@ -228,9 +228,7 @@ OPSEC Compliance
 ---
 
 https://img.shields.io/badge/OSINT-Professional-blue?style=for-the-badge
-
 https://img.shields.io/badge/Privacy-First-red?style=for-the-badge
-
 https://img.shields.io/badge/Open%20Source-Yes-brightgreen?style=for-the-badge
 
 Thanks for your consideration.
